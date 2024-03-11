@@ -1,0 +1,119 @@
+BASE:
+- ''
+DATA:
+  test:
+    adaptive: false
+    angle:
+    - 5
+    - 5
+    - 180
+    batch_size: 1
+    crop_ratio: 0.8
+    cutmix: 0.0
+    depth: 11
+    disable: false
+    distort: false
+    filelist: data/scannet.npz/scannetv2_val_npz.txt
+    flip:
+    - 0.5
+    - 0.5
+    - 0.0
+    full_depth: 2
+    in_memory: false
+    interval: &id001
+    - 1
+    - 1
+    - 1
+    jitter: 0.1
+    location: data/scannet.npz/train
+    max_npt: -1
+    name: scannet
+    num_workers: 2
+    orient_normal: ''
+    pin_memory: true
+    scale: 0.2
+    shuffle: false
+    take: -1
+    uniform: false
+  train:
+    adaptive: false
+    angle:
+    - 5
+    - 5
+    - 180
+    batch_size: 4
+    crop_ratio: 0.8
+    cutmix: 0.0
+    depth: 11
+    disable: false
+    distort: true
+    filelist: data/scannet.npz/scannetv2_train_npz.txt
+    flip:
+    - 0.5
+    - 0.5
+    - 0.0
+    full_depth: 2
+    in_memory: false
+    interval: *id001
+    jitter: 0.1
+    location: data/scannet.npz/train
+    max_npt: 120000
+    name: scannet
+    num_workers: 4
+    orient_normal: ''
+    pin_memory: true
+    scale: 0.2
+    shuffle: true
+    take: -1
+    uniform: false
+LOSS:
+  label_smoothing: 0.0
+  mask: 0
+  name: ''
+  num_class: 21
+MODEL:
+  channel: 10
+  feature: NDFP
+  find_unused_parameters: false
+  interp: nearest
+  name: pointmamba_seg
+  nempty: true
+  nout: 21
+  sync_bn: true
+  use_checkpoint: false
+SOLVER:
+  alias: scannet
+  best_val: max:mIoU_part
+  ckpt: ''
+  ckpt_num: 200
+  clip_grad: -1.0
+  dist_url: tcp://localhost:10002
+  empty_cache: true
+  eval_epoch: 1
+  eval_step: -1
+  gamma: 0.1
+  gpu:
+  - 0
+  - 2
+  - 3
+  log_per_iter: 10
+  logdir: logs/scannet/pointmamba_seg_new_scannet
+  lr: 0.0015
+  lr_min: 0.0001
+  lr_power: 0.9
+  lr_type: step_warmup
+  max_epoch: 700
+  milestones:
+  - 360
+  - 520
+  progress_bar: true
+  rand_seed: -1
+  run: train
+  test_every_epoch: 2
+  type: adamw_attn
+  warmup_epoch: 20
+  warmup_init: 0.001
+  weight_decay: 0.05
+SYS:
+  cmds: segmentation.py --config configs/seg_scannet.yaml SOLVER.gpu 0,2,3, SOLVER.alias
+    scannet SOLVER.dist_url tcp://localhost:10002

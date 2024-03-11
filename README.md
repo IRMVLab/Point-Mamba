@@ -1,5 +1,6 @@
+
 <div  align="center">    
- <img src="./figure/Arc.png" width = ""  align=center />
+ <img src="./figure/snake.png" width = "200"  align=center />
 </div>
 
 
@@ -8,15 +9,16 @@
 <h3>A Novel Point Cloud Backbone Based on State Space Model with Octree-Based Ordering Strategy</h3>
 
 
-## Abstact
+# Overview
 
+<div  align="center">    
+ <img src="./figure/Arc.png" width = ""  align=center />
+</div>
 
 <div align="left">
- Recently, state space model (SSM) has gained great attention due to its promising performance, linear complexity, and long sequence modeling ability in both language and image domains. However, it is non-trivial to extend SSM to the point cloud field, because of the causality requirement of SSM and the disorder and irregularity nature of point clouds. In this paper, we propose a novel SSM-based point cloud processing backbone, named Point Mamba, with a causality-aware ordering mechanism. To construct the causal dependency relationship, we design an octree-based ordering strategy on raw irregular points, globally sorting points in a z-order sequence and also retaining their spatial proximity. Our method achieves state-of-the-art performance compared with transformer-based counterparts, with 93.4\% accuracy and 75.7 mIOU respectively on the ModelNet40 classification dataset and ScanNet semantic segmentation dataset. Furthermore, our Point Mamba has linear complexity, which is more efficient than transformer-based methods. Our method demonstrates the great potential that SSM can serve as a generic backbone in point cloud understanding.
 
-
-<div align="left">
-
+## News
+- 2024/3/11 Release our code and checkpoint for semantic segmentation for Scannet
 ## 1. Environment
 
 The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
@@ -85,8 +87,7 @@ The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
     │ ├── scannetv2-labels.combined.tsv
     ```
 
-2. **Train**: Run the following command to train the network with 3 GPUs and port 10001. The mIoU on the validation set without voting is 75.0. And the training log and weights can be downloaded
-   <!-- [here](https://1drv.ms/u/s!Ago-xIr0OR2-gRrV35QGxnHJR4ku?e=ZXRqV7). -->
+2. **Train**: Run the following command to train the network with 3 GPUs and port 10001. The mIoU on the validation set without voting is 75.0. And the training log and weights can be find in the folder **bestcheckpoint_seg**.
 
     ```bash
     python scripts/run_seg_scannet.py --gpu 0,1,2 --alias scannet --port 10001
@@ -110,3 +111,11 @@ The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
     ```bash
     python classification.py --config configs/cls_m40.yaml SOLVER.gpu 0,
     ```
+
+## 4. Acknowledegment 
+Our project is based on 
+- Mamba ([paper](https://arxiv.org/abs/2312.00752), [code](https://github.com/state-spaces/mamba))
+- Octformer([paper](https://arxiv.org/abs/2305.03045), [code](https://github.com/octree-nn/octformer))
+- Point Cloud Transformer([paper](https://arxiv.org/abs/2012.09688), [code](https://github.com/MenghaoGuo/PCT))
+
+Thanks for their wonderful works!

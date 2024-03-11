@@ -47,7 +47,7 @@ The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
     pip install ./dwconv
     ```
 
-5. Install ``causal-conv1d`` and ``mamba``
+5. Install ``causal-conv1d`` and ``mamba``, which you can download in this [link](https://sjtueducn-my.sharepoint.com/:u:/g/personal/yj1938_sjtu_edu_cn/EfvXT20i7IBPsw_KR47ok3wB0l531kf7DMQwJWjdnPxlkQ?e=iDhOe9)
     ```bash
     pip install -e causal-conv1d
     pip install -e mamba
@@ -87,7 +87,7 @@ The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
     │ ├── scannetv2-labels.combined.tsv
     ```
 
-2. **Train**: Run the following command to train the network with 3 GPUs and port 10001. The mIoU on the validation set without voting is 75.0. And the training log and weights can be find in the folder **bestcheckpoint_seg**.
+2. **Train**: Run the following command to train the network with 3 GPUs and port 10001. The mIoU on the validation set without voting is 75.0. And the training log and weights can be download in [link](https://sjtueducn-my.sharepoint.com/:u:/g/personal/yj1938_sjtu_edu_cn/EfvXT20i7IBPsw_KR47ok3wB0l531kf7DMQwJWjdnPxlkQ?e=iDhOe9)
 
     ```bash
     python scripts/run_seg_scannet.py --gpu 0,1,2 --alias scannet --port 10001

@@ -1,0 +1,14 @@
+README.md
+setup.py
+./csrc/dwconv.cu
+./csrc/pybind.cpp
+dwconv/__init__.py
+dwconv/nn.py
+dwconv.egg-info/PKG-INFO
+dwconv.egg-info/SOURCES.txt
+dwconv.egg-info/dependency_links.txt
+dwconv.egg-info/not-zip-safe
+dwconv.egg-info/requires.txt
+dwconv.egg-info/top_level.txt
+test/test_octree_dwconv.py
+test/test_time.py

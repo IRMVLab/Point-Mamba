@@ -128,6 +128,7 @@ The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
 Our project is based on 
 - Mamba ([paper](https://arxiv.org/abs/2312.00752), [code](https://github.com/state-spaces/mamba))
 - Octformer([paper](https://arxiv.org/abs/2305.03045), [code](https://github.com/octree-nn/octformer))
+- Vision Mamba([paper](https://arxiv.org/abs/2401.09417),[code](https://github.com/hustvl/Vim))
 - Point Cloud Transformer([paper](https://arxiv.org/abs/2012.09688), [code](https://github.com/MenghaoGuo/PCT))
 
 Thanks for their wonderful works!

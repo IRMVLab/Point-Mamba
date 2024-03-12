@@ -16,11 +16,24 @@
 </div>
 
 <div align="left">
+ 
+## Citation
+ If you find this project useful for your work, please consider citing:
+ ```
+ @misc{liu2024point,
+      title={Point Mamba: A Novel Point Cloud Backbone Based on State Space Model with Octree-Based Ordering Strategy}, 
+      author={Jiuming Liu and Ruiji Yu and Yian Wang and Yu Zheng and Tianchen Deng and Weicai Ye and Hesheng Wang},
+      year={2024},
+      eprint={2403.06467},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
 
 ## News
-- 2024/3/11 Release our code and checkpoint for semantic segmentation for Scannet
+- 2024/3/11 Release our code and checkpoint for large-scale semantic segmentation on Scannet!
+- 
 ## 1. Environment
-
 The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
 
 1. Python 3.10.13

@@ -32,7 +32,6 @@
 
 ## News
 - 2024/3/11 Release our code and checkpoint for large-scale semantic segmentation on Scannet!
-- 
 ## 1. Environment
 The code has been tested on Ubuntu 20.04 with 3 Nvidia 4090 GPUs (24GB memory).
 

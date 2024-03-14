@@ -54,56 +54,21 @@ class OctreeT(Octree):
 
     num = self.max_depth + 1
     self.batch_idx = [None] * num
-    # self.patch_mask = [None] * num
-    # self.dilate_mask = [None] * num
-    # self.rel_pos = [None] * num
-    # self.dilate_pos = [None] * num
     self.build_t()
 
   def build_t(self):
     for d in range(self.start_depth, self.max_depth + 1):
       self.build_batch_idx(d)
-      # self.build_attn_mask(d)
-      # self.build_rel_pos(d)
 
   def build_batch_idx(self, depth: int):
     batch = self.batch_id(depth, self.nempty)
     self.batch_idx[depth] = self.patch_partition(batch, depth, self.batch_size)
 
-  # def build_attn_mask(self, depth: int):
-  #   batch = self.batch_idx[depth]
-  #   mask = batch.view(-1, self.patch_size)
-  #   self.patch_mask[depth] = self._calc_attn_mask(mask)
-
-  #   mask = batch.view(-1, self.patch_size, self.dilation)
-  #   mask = mask.transpose(1, 2).reshape(-1, self.patch_size)
-  #   self.dilate_mask[depth] = self._calc_attn_mask(mask)
-
-  # def _calc_attn_mask(self, mask: torch.Tensor):
-  #   attn_mask = mask.unsqueeze(2) - mask.unsqueeze(1)
-  #   attn_mask = attn_mask.masked_fill(attn_mask != 0, self.invalid_mask_value)
-  #   return attn_mask
-
-  # def build_rel_pos(self, depth: int):
-  #   key = self.key(depth, self.nempty)
-  #   key = self.patch_partition(key, depth)
-  #   x, y, z, _ = ocnn.octree.key2xyz(key, depth)
-  #   xyz = torch.stack([x, y, z], dim=1)
-
-  #   xyz = xyz.view(-1, self.patch_size, 3)
-  #   self.rel_pos[depth] = xyz.unsqueeze(2) - xyz.unsqueeze(1)
-
-  #   xyz = xyz.view(-1, self.patch_size, self.dilation, 3)
-  #   xyz = xyz.transpose(1, 2).reshape(-1, self.patch_size, 3)
-  #   self.dilate_pos[depth] = xyz.unsqueeze(2) - xyz.unsqueeze(1)
-
   def patch_partition(self, data: torch.Tensor, depth: int, fill_value=0):
-    num = self.nnum_a[depth] - self.nnum_t[depth]#num表示patch的数量
-    tail = data.new_full((num,) + data.shape[1:], fill_value)#tail是一个(-1, 3)的tensor
-    return torch.cat([data, tail], dim=0)
+    num = self.nnum_a[depth] - self.nnum_t[depth]
+    tail = data.new_full((num,) + data.shape[1:], fill_value)
 
-  # def patch_reverse(self, data: torch.Tensor, depth: int):
-  #   return data[:self.nnum_t[depth]]
+
 
 
 class MLP(torch.nn.Module):
@@ -145,7 +110,7 @@ class OctreeDWConvBn(torch.nn.Module):
     return out
 
 
-class RPE(torch.nn.Module):#定义RPE类，作用是计算相对位置编码
+class RPE(torch.nn.Module):
 
   def __init__(self, patch_size: int, num_heads: int, dilation: int = 1):
     super().__init__()
@@ -177,78 +142,6 @@ class RPE(torch.nn.Module):#定义RPE类，作用是计算相对位置编码
     return 'num_heads={}, pos_bnd={}, dilation={}'.format(
             self.num_heads, self.pos_bnd, self.dilation)  # noqa
 
-
-class OctreeAttention(torch.nn.Module):
-
-  def __init__(self, dim: int, patch_size: int, num_heads: int,
-               qkv_bias: bool = True, qk_scale: Optional[float] = None,
-               attn_drop: float = 0.0, proj_drop: float = 0.0,
-               dilation: int = 1, use_rpe: bool = True):
-    super().__init__()
-    self.dim = dim
-    self.patch_size = patch_size
-    self.num_heads = num_heads
-    self.dilation = dilation
-    self.use_rpe = use_rpe
-    self.scale = qk_scale or (dim // num_heads) ** -0.5
-
-    self.qkv = torch.nn.Linear(dim, dim * 3, bias=qkv_bias)
-    self.attn_drop = torch.nn.Dropout(attn_drop)
-    self.proj = torch.nn.Linear(dim, dim)
-    self.proj_drop = torch.nn.Dropout(proj_drop)
-    self.softmax = torch.nn.Softmax(dim=-1)
-
-    # NOTE: self.rpe is not used in the original experiments of my paper. When
-    # releasing the code, I added self.rpe because I observed that it could
-    # stablize the training process and improve the performance on ScanNet by
-    # 0.3 to 0.5; on the other datasets, the improvements are more marginal. So
-    # it is not indispensible, and can be removed by setting `use_rpe` as False.
-    self.rpe = RPE(patch_size, num_heads, dilation) if use_rpe else None
-
-  def forward(self, data: torch.Tensor, octree: OctreeT, depth: int):
-    H = self.num_heads
-    K = self.patch_size#patch_size表示点云被划分成的patch的大小
-    C = self.dim
-    D = self.dilation
-
-    # patch partition
-    data = octree.patch_partition(data, depth)
-    if D > 1:  # dilation把data的shape从(-1, C)变成(-1, D, K, C)
-      rel_pos = octree.dilate_pos[depth]#dilate_pos是一个(-1, D, K, 3)的tensor
-      mask = octree.dilate_mask[depth]
-      data = data.view(-1, K, D, C).transpose(1, 2).reshape(-1, C)#data先reshape成(-1, K, D, C)，然后transpose(1, 2)变成(-1, D, K, C)，最后reshape(-1, C)
-    else:
-      rel_pos = octree.rel_pos[depth]
-      mask = octree.patch_mask[depth]
-    data = data.view(-1, K, C)
-
-    # qkv
-    qkv = self.qkv(data).reshape(-1, K, 3, H, C // H).permute(2, 0, 3, 1, 4)
-    q, k, v = qkv[0], qkv[1], qkv[2]      # (N, H, K, C')
-    q = q * self.scale
-
-    # attn
-    attn = q @ k.transpose(-2, -1)        # (N, H, K, K)
-    attn = self.apply_rpe(attn, rel_pos)  # (N, H, K, K)
-    attn = attn + mask.unsqueeze(1)
-    attn = self.softmax(attn)
-    attn = self.attn_drop(attn)
-    data = (attn @ v).transpose(1, 2).reshape(-1, C)#(N, H, K, K) @ (N, H, K, C') -> (N, H, K, C') -> (N, K, H, C') -> (N, K, C)
-
-    # patch reverse
-    if D > 1:  # dilation
-      data = data.view(-1, D, K, C).transpose(1, 2).reshape(-1, C)
-    data = octree.patch_reverse(data, depth)
-
-    # ffn做的事情是先做一个全连接层，然后再做一个dropout，最后再做一个全连接层
-    data = self.proj(data)
-    data = self.proj_drop(data)
-    return data
-
-  def apply_rpe(self, attn, rel_pos):
-    if self.use_rpe:
-      attn = attn + self.rpe(rel_pos)
-    return attn
 
   def extra_repr(self) -> str:
     return 'dim={}, patch_size={}, num_heads={}, dilation={}'.format(
@@ -422,18 +315,6 @@ class Block(nn.Module):
     def __init__(
         self, dim, mixer_cls, norm_cls=nn.LayerNorm, fused_add_norm=False, residual_in_fp32=False,drop_path=0.0
     ):
-        """
-        Simple block wrapping a mixer class with LayerNorm/RMSNorm and residual connection"
-
-        This Block has a slightly different structure compared to a regular
-        prenorm Transformer block.
-        The standard block is: LN -> MHA/MLP -> Add.
-        [Ref: https://arxiv.org/abs/2002.04745]
-        Here we have: Add -> LN -> Mixer, returning both
-        the hidden_states (output of the mixer) and the residual.
-        This is purely for performance reasons, as we can fuse add and LayerNorm.
-        The residual needs to be provided (except for the very first block).
-        """
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
         self.fused_add_norm = fused_add_norm
@@ -484,14 +365,14 @@ def create_block(
     d_model,
     ssm_cfg=None,
     norm_epsilon=1e-5,
-    drop_path=0.,#drop_path是一个参数，用于指定DropPath类的类型,DroPath类的作用是：随机丢弃一些神经元
+    drop_path=0.,
     rms_norm=False,
     residual_in_fp32=False,
     fused_add_norm=False,
     layer_idx=None,
     device=None,
     dtype=None,
-    bimamba_type="none",#bimamba_type是一个参数，用于指定Mamba类的类型
+    bimamba_type="none",
 ):
     if ssm_cfg is None:
         ssm_cfg = {}
@@ -513,8 +394,6 @@ def create_block(
     )
     block.layer_idx = layer_idx
     return block
-
-# https://github.com/huggingface/transformers/blob/c28d04e9e252a1a099944e325685f14d242ecdcd/src/transformers/models/gpt2/modeling_gpt2.py#L454
 def _init_weights(
     module,
     n_layer,
@@ -530,34 +409,22 @@ def _init_weights(
         nn.init.normal_(module.weight, std=initializer_range)
 
     if rescale_prenorm_residual:
-        # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
-        #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
-        #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
-        #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
-        #
-        # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
+ 
         for name, p in module.named_parameters():
             if name in ["out_proj.weight", "fc2.weight"]:
-                # Special Scaled Initialization --> There are 2 Layer Norms per Transformer Block
-                # Following Pytorch init, except scale by 1/sqrt(2 * n_layer)
-                # We need to reinit p since this code could be called multiple times
-                # Having just p *= scale would repeatedly scale it down
+
                 nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 with torch.no_grad():
                     p /= math.sqrt(n_residuals_per_layer * n_layer)
                     
 
 class PointMambaMix(nn.Module):
-    def __init__(self, 
-        #点云的参数，输入feature_1的形状是torch.Size([32, 256, 256]),32是batch_size,256是点数,也是序列长度，256是通道数
+    def __init__(self,  
         output_dim=512,
         input_dim=512,
         drop_path = 0.1,
-        #补充位置嵌入
-        # point_xyz=3,
-        # 模型参数
         drop_out_in_block= 0.1,
-        n_layer=1,#层的数量
+        n_layer=1,
         ssm_cfg=None,
         norm_epsilon: float = 1e-5,
         rms_norm: bool = True,
@@ -569,7 +436,7 @@ class PointMambaMix(nn.Module):
         # bimamba_type="none",
         bimamba_type="v2",
         **kwargs)->None:
-        factory_kwargs = {"device": device, "dtype": dtype}#指定模型的类型
+        factory_kwargs = {"device": device, "dtype": dtype}
         # add factory_kwargs into kwargs
         kwargs.update(factory_kwargs) 
         super().__init__()
@@ -579,17 +446,11 @@ class PointMambaMix(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim 
         
-        #输出向量
-        # self.head = nn.Linear(self.input_dim, self.output_dim) if self.output_dim > 0 else nn.Identity()
-        # #采用卷积模式定义head
-        # self.conv = nn.Conv1d(self.input_dim, self.output_dim, 1)
-        # self.bn = nn.BatchNorm1d(self.output_dim)
         
         if self.fused_add_norm:
             if layer_norm_fn is None or rms_norm_fn is None:
                 raise ImportError("Failed to import Triton LayerNorm / RMSNorm kernels")
-        #位置嵌入和权重初始化
-        # drop可能需要考虑
+
         self.layers = nn.ModuleList(
             [
                 create_block(
@@ -600,21 +461,19 @@ class PointMambaMix(nn.Module):
                     residual_in_fp32=residual_in_fp32,
                     fused_add_norm=fused_add_norm,
                     layer_idx=i,
-                    bimamba_type=bimamba_type,#双向Mamba
-                    drop_path=drop_path,
+                    bimamba_type=bimamba_type,
                     **factory_kwargs,
                 )
                 for i in range(n_layer)
             ]
         )
 
-        self.norm_f = (nn.LayerNorm if not rms_norm else RMSNorm)(#指定norm_f的类型
+        self.norm_f = (nn.LayerNorm if not rms_norm else RMSNorm)(
             input_dim, eps=norm_epsilon, **factory_kwargs
-        )#对哪一个维度进行归一化：dim=1
+        )
         
-        self.pre_logits = nn.Identity()#作用是：将输入的数据原封不动的输出
-
-        self.apply(#初始化权重
+        self.pre_logits = nn.Identity()
+        self.apply(
             partial(
                 _init_weights,
                 n_layer=n_layer,
@@ -631,13 +490,6 @@ class PointMambaMix(nn.Module):
             for i, layer in enumerate(self.layers)
         }
         
-    # @torch.jit.ignore
-    # def no_weight_decay(self):
-    #     return {"pos_embed", "cls_token", "dist_token"}
-
-    # @torch.jit.ignore()#表示不对该函数进行torch.jit编译,torch.jit是一个装饰器作用是：将函数编译成torch脚本
-    # def load_pretrained(self, checkpoint_path, prefix=""):
-    #     _load_weights(self, checkpoint_path, prefix)
 
     def forward_features(self, input_ids, inference_params=None):
         # hidden_states = self.embedding(input_ids)
@@ -670,22 +522,8 @@ class PointMambaMix(nn.Module):
 
         #offset
         hidden_states = hidden_states - input_ids
-        
-        #dropout
-        # hidden_states = self.drop_out_in_block(hidden_states)
-        # print('hidden_states.shape',hidden_states.shape)
-        #对dim=1求norm
-        # hidden_states = nn.functional.normalize(hidden_states, p=2, dim=1)#p=2表示使用L2范数
+
         return hidden_states
     
-    def forward(self, input_ids, inference_params=None):#input_ids的形状是torch.Size([32, 256, 256])
-        #做线性投影分类->Vit做法
-        input_ids = self.forward_features(input_ids, inference_params)
-        
-        # head->linear
-        # input_ids = input_ids.permute(0, 2, 1)
-        # input_ids = self.head(input_ids)#对最后一维进行线性变换
-        # #再把dim=1和dim=2的维度进行交换
-        # input_ids = input_ids.permute(0, 2, 1)
-        # print('input_ids.shape',input_ids.shape)
+    def forward(self, input_ids, inference_params=None):
         return input_ids

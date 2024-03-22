@@ -310,6 +310,7 @@ class PointMamba(torch.nn.Module):
 
 
 ## PointMamba
+
 class Block(nn.Module):
     def __init__(
         self, dim, mixer_cls, norm_cls=nn.LayerNorm, fused_add_norm=False, residual_in_fp32=False,drop_path=0.0
@@ -453,7 +454,7 @@ class PointMambaMix(nn.Module):
         self.layers = nn.ModuleList(
             [
                 create_block(
-                    input_dim,#d_model
+                    input_dim,#嵌入x
                     ssm_cfg=ssm_cfg,
                     norm_epsilon=norm_epsilon,
                     rms_norm=rms_norm,

@@ -29,7 +29,7 @@ def train():
 
 def test():
   # get the predicted probabilities for each point
-  ckpt = ('logs/scannet200/octformer_{}/best_model.pth'.format(args.alias)
+  ckpt = ('logs/scannet200/point_mamba_{}/best_model.pth'.format(args.alias)
           if args.ckpt == '\'\'' else args.ckpt)   # use args.ckpt if provided
   cmds = [
       'python segmentation.py',
@@ -50,8 +50,8 @@ def test():
   cmds = [
       'python tools/seg_scannet.py',
       '--run generate_output_seg',
-      '--path_pred logs/scannet200/octformer_test_{}'.format(args.alias),
-      '--path_out logs/scannet200/octformer_test_seg_{}'.format(args.alias),
+      '--path_pred logs/scannet200/point_mamba_test_{}'.format(args.alias),
+      '--path_out logs/scannet200/point_mamba_test_seg_{}'.format(args.alias),
       '--filelist  data/scannet.npz/scannetv2_test.txt',
       '--scannet200', ]
   execute_command(cmds)
@@ -59,7 +59,7 @@ def test():
 
 def validate():
   # get the predicted probabilities for each point
-  ckpt = ('logs/scannet200/octformer_{}/best_model.pth'.format(args.alias)
+  ckpt = ('logs/scannet200/point_mamba_{}/best_model.pth'.format(args.alias)
           if args.ckpt == '\'\'' else args.ckpt)   # use args.ckpt if provided
   cmds = [
       'python segmentation.py',
@@ -78,8 +78,8 @@ def validate():
   cmds = [
       'python tools/seg_scannet.py',
       '--run generate_output_seg',
-      '--path_pred logs/scannet200/octformer_val_{}'.format(args.alias),
-      '--path_out  logs/scannet200/octformer_val_seg_{}'.format(args.alias),
+      '--path_pred logs/scannet200/point_mamba_val_{}'.format(args.alias),
+      '--path_out  logs/scannet200/point_mamba_val_seg_{}'.format(args.alias),
       '--filelist  data/scannet200.npz/scannetv2_val_npz.txt',
       '--scannet200', ]
   execute_command(cmds)
@@ -89,7 +89,7 @@ def validate():
       'python tools/seg_scannet.py',
       '--run calc_iou',
       '--path_in data/scannet200.npz/train',
-      '--path_pred logs/scannet200/octformer_val_seg_{}'.format(args.alias),
+      '--path_pred logs/scannet200/point_mamba_val_seg_{}'.format(args.alias),
       '--scannet200', ]
   execute_command(cmds)
 

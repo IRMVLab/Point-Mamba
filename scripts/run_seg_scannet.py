@@ -27,39 +27,39 @@ def train():
   execute_command(cmds)
 
 
-def test():
-  # get the predicted probabilities for each point
-  ckpt = ('logs/scannet/octformer_{}/best_model.pth'.format(args.alias)
-          if args.ckpt == '\'\'' else args.ckpt)   # use args.ckpt if provided
+# def test():
+#   # get the predicted probabilities for each point
+#   ckpt = ('logs/scannet/pointmamba_seg_{}/best_model.pth'.format(args.alias)
+#           if args.ckpt == '\'\'' else args.ckpt)   # use args.ckpt if provided
 
-  cmds = [
-      'python segmentation.py',
-      '--config configs/seg_scannet.yaml',
-      'LOSS.mask -255',       # to keep all points
-      'SOLVER.gpu  {},'.format(args.gpu),
-      'SOLVER.run evaluate',
-      'SOLVER.eval_epoch 72',  # voting with 72 predictions
-      'SOLVER.alias test_{}'.format(args.alias),
-      'SOLVER.ckpt {}'.format(ckpt),
-      'DATA.test.batch_size 1',
-      'DATA.test.location', 'data/scannet.npz/test',
-      'DATA.test.filelist', 'data/scannet.npz/scannetv2_test_npz.txt',
-      'DATA.test.distort True', ]
-  execute_command(cmds)
+#   cmds = [
+#       'python segmentation.py',
+#       '--config configs/seg_scannet.yaml',
+#       'LOSS.mask -255',       # to keep all points
+#       'SOLVER.gpu  {},'.format(args.gpu),
+#       'SOLVER.run evaluate',
+#       'SOLVER.eval_epoch 72',  # voting with 72 predictions
+#       'SOLVER.alias test_{}'.format(args.alias),
+#       'SOLVER.ckpt {}'.format(ckpt),
+#       'DATA.test.batch_size 1',
+#       'DATA.test.location', 'data/scannet.npz/test',
+#       'DATA.test.filelist', 'data/scannet.npz/scannetv2_test_npz.txt',
+#       'DATA.test.distort True', ]
+#   execute_command(cmds)
 
   # map the probabilities to labels
   cmds = [
       'python tools/seg_scannet.py',
       '--run generate_output_seg',
-      '--path_pred logs/scannet/octformer_test_{}'.format(args.alias),
-      '--path_out logs/scannet/octformer_test_seg_{}'.format(args.alias),
+      '--path_pred logs/scannet/point_mamba_test_{}'.format(args.alias),
+      '--path_out logs/scannet/point_mamba_test_seg_{}'.format(args.alias),
       '--filelist  data/scannet.npz/scannetv2_test.txt', ]
   execute_command(cmds)
 
 
 def validate():
   # get the predicted probabilities for each point
-  ckpt = ('logs/scannet/octformer_best_{}/best_model.pth'.format(args.alias)
+  ckpt = ('logs/scannet/pointmamba_{}/best_model.pth'.format(args.alias)
           if args.ckpt == '\'\'' else args.ckpt)   # use args.ckpt if provided
   print('alias:', args.alias)
   cmds = [
@@ -68,7 +68,7 @@ def validate():
       'LOSS.mask -255',       # to keep all points
       'SOLVER.gpu  {},'.format(args.gpu),
       'SOLVER.run evaluate',
-      'SOLVER.eval_epoch 3',  # voting with 120 predictions
+      'SOLVER.eval_epoch 120',  # voting with 120 predictions
       'SOLVER.alias val_{}'.format(args.alias),
       'SOLVER.ckpt {}'.format(ckpt),
       'DATA.test.batch_size 1',
@@ -79,17 +79,16 @@ def validate():
   cmds = [
       'python tools/seg_scannet.py',
       '--run generate_output_seg',
-      '--path_pred logs/scannet/octformer_best_val_{}'.format(args.alias),
-      '--path_out  logs/scannet/octformer_best_val_seg_{}'.format(args.alias),
+      '--path_pred logs/scannet/pointmamba_val_{}'.format(args.alias),
+      '--path_out  logs/scannet/pointmamba_val_seg_{}'.format(args.alias),
       '--filelist  data/scannet.npz/scannetv2_val_npz.txt', ]
   execute_command(cmds)
-
   # calculate the mIoU
   cmds = [
       'python tools/seg_scannet.py',
       '--run calc_iou',
       '--path_in data/scannet.npz/train',
-      '--path_pred logs/scannet/octformer_best_val_seg_{}'.format(args.alias), ]
+      '--path_pred logs/scannet/pointmamba_val_seg_{}'.format(args.alias), ]
   execute_command(cmds)
 
 def calc_iou():
@@ -97,7 +96,7 @@ def calc_iou():
       'python tools/seg_scannet.py',
       '--run calc_iou',
       '--path_in data/scannet.npz/train',
-      '--path_pred logs/scannet/octformer_4batch[K,B,C]_scannet_val_seg', ]
+      '--path_pred logs/scannet/pointmamba_val_seg_{}'.format(args.alias), ]
   execute_command(cmds)
 
 if __name__ == '__main__':

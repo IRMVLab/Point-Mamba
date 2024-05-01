@@ -526,4 +526,5 @@ class PointMambaMix(nn.Module):
         return hidden_states
     
     def forward(self, input_ids, inference_params=None):
+        input_ids = self.forward_features(input_ids, inference_params)
         return input_ids
